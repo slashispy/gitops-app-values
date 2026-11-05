@@ -1,0 +1,28 @@
+# =============================================================================
+# metadata.yaml — descriptor declarativo de la aplicación `quicktask`.
+# -----------------------------------------------------------------------------
+# El ApplicationSet de `gitops-argocd-apps` (Fase 4) recorre los
+# `apps/*/metadata.yaml` de este repo con un git generator y, por cada uno,
+# genera una Argo CD `Application` que:
+#   - usa el chart `helm-chart-generic-app` como source del chart,
+#   - usa el `values.yaml` hermano como valores,
+#   - despliega en el `namespace` indicado.
+#
+# Mantener este contrato estable: el generador del ApplicationSet lee estas claves.
+# =============================================================================
+
+# -- Nombre de la Application en Argo CD (y del release Helm).
+name: quicktask
+
+# -- Namespace de Kubernetes donde se despliega la app.
+namespace: quicktask
+
+# -- Repo del chart genérico y revisión a seguir.
+chart:
+  repoURL: https://github.com/slashispy/helm-chart-generic-app
+  # Ruta del chart dentro del repo (raíz del repo).
+  path: .
+  targetRevision: main
+
+# -- Habilita/pausa la gestión de esta app por el ApplicationSet.
+enabled: true

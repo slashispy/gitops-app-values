@@ -1,0 +1,75 @@
+# =============================================================================
+# values.yaml — valores de `quicktask` que consumen el chart genérico
+#               (helm-chart-generic-app). Esta es la "configuración de la app".
+# -----------------------------------------------------------------------------
+# El contrato de estas claves está definido y documentado en el chart:
+#   https://github.com/slashispy/helm-chart-generic-app/blob/main/values.yaml
+# Aquí solo parametrizamos quicktask para el circuito GitOps en KIND.
+# =============================================================================
+
+# El release toma el nombre de la app (quicktask) en vez del nombre del chart.
+nameOverride: quicktask
+
+replicaCount: 1
+
+image:
+  repository: quicktask
+  tag: "dev"            # imagen cargada en KIND con `kind load docker-image quicktask:dev`
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+# -----------------------------------------------------------------------------
+# Variables de entorno de quicktask (contrato definido por config/LoadConfig):
+#   MONGO_URI, MONGO_DB_NAME, JWT_SECRET, PORT
+#   - no sensibles -> ConfigMap (env.config)
+#   - sensibles    -> Secret   (env.secret)  [DEMO: en prod, External Secrets/SOPS]
+# -----------------------------------------------------------------------------
+env:
+  config:
+    MONGO_DB_NAME: quicktask
+    PORT: "8080"
+  secret:
+    # DEMO: valores de ejemplo, NO usar en producción.
+    MONGO_URI: "mongodb://mongodb.quicktask.svc.cluster.local:27017"
+    JWT_SECRET: "demo-not-a-real-secret-change-me"
+
+# Probes contra los endpoints reales de quicktask (Fase 1).
+probes:
+  liveness:
+    enabled: true
+    httpGet:
+      path: /health      # liveness: siempre 200
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    enabled: true
+    httpGet:
+      path: /ready       # readiness: verifica ping a Mongo
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+# Dependencia MongoDB embebida en el cluster (demo en KIND).
+mongodb:
+  enabled: true
+  serviceName: mongodb
+  port: 27017
+  dbName: quicktask
+  auth:
+    enabled: false       # DEMO sin auth; MONGO_URI no lleva credenciales.
+  persistence:
+    enabled: true
+    size: 1Gi
