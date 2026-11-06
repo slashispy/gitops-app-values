@@ -9,6 +9,18 @@ _cómo_ (los templates de Kubernetes) vive en el chart genérico.
 > - **`gitops-app-values`** (este repo) → **qué** se despliega y **con qué values**.
 > - [`gitops-argocd-apps`](https://github.com/slashispy/gitops-argocd-apps) → **quién** reconcilia (Argo CD: App of Apps + ApplicationSet).
 
+## Parte del circuito QuickTask GitOps
+
+| Repo | Rol |
+|---|---|
+| [`quicktask`](https://github.com/slashispy/quicktask) | Aplicación: API Go + MongoDB, JWT, `/health` y `/ready`. |
+| [`helm-chart-generic-app`](https://github.com/slashispy/helm-chart-generic-app) | Helm chart genérico y reutilizable (**cómo** se despliega). |
+| **`gitops-app-values`** (este repo) | Values por aplicación (**qué** se despliega). |
+| [`gitops-argocd-apps`](https://github.com/slashispy/gitops-argocd-apps) | App of Apps + ApplicationSet de Argo CD (**quién** reconcilia). |
+| [`kind-gitops-utility-belt`](https://github.com/slashispy/kind-gitops-utility-belt) | Bootstrap del cluster KIND, tutorial y sitio del proyecto. |
+
+📖 [Tutorial paso a paso](https://slashispy.github.io/kind-gitops-utility-belt/tutorial) · 🌐 [Sitio del proyecto](https://slashispy.github.io/kind-gitops-utility-belt/)
+
 ## Estructura
 
 ```
@@ -77,11 +89,3 @@ helm template quicktask ../helm-chart-generic-app \
   -n quicktask \
   -f apps/quicktask/values.yaml
 ```
-
-## Parte del circuito QuickTask GitOps
-
-1. [`quicktask`](https://github.com/slashispy/quicktask) — la aplicación (API Go + MongoDB).
-2. [`helm-chart-generic-app`](https://github.com/slashispy/helm-chart-generic-app) — chart genérico reutilizable.
-3. **`gitops-app-values`** — values por app. ← estás aquí
-4. [`gitops-argocd-apps`](https://github.com/slashispy/gitops-argocd-apps) — App of Apps + ApplicationSet.
-5. [`kind-gitops-utility-belt`](https://github.com/slashispy/kind-gitops-utility-belt) — bootstrap del circuito en KIND.
