@@ -1,0 +1,15 @@
+# =============================================================================
+# metadata.yaml — descriptor declarativo de la aplicación `quicktask-auth`.
+# Mismo contrato que apps/quicktask/metadata.yaml (ver README del repo).
+# =============================================================================
+name: quicktask-auth
+
+# Mismo namespace que quicktask: los Secrets con las claves se crean allí.
+namespace: quicktask
+
+chart:
+  repoURL: https://github.com/slashispy/helm-chart-generic-app
+  path: .
+  targetRevision: main
+
+enabled: true

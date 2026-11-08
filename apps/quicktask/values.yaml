@@ -24,7 +24,7 @@ service:
 
 # -----------------------------------------------------------------------------
 # Variables de entorno de quicktask (contrato definido por config/LoadConfig):
-#   MONGO_URI, MONGO_DB_NAME, JWT_SECRET, PORT
+#   MONGO_URI, MONGO_DB_NAME, PORT, JWT_PUBLIC_KEY_PATH, JWT_ISSUER, JWT_AUDIENCE
 #   - no sensibles -> ConfigMap (env.config)
 #   - sensibles    -> Secret   (env.secret)  [DEMO: en prod, External Secrets/SOPS]
 # -----------------------------------------------------------------------------
@@ -32,10 +32,25 @@ env:
   config:
     MONGO_DB_NAME: quicktask
     PORT: "8080"
+    # Los JWT los emite `quicktask-auth` (RS256); aquí solo se valida con la clave PÚBLICA.
+    JWT_PUBLIC_KEY_PATH: /keys/public.pem
+    JWT_ISSUER: http://quicktask-auth
+    JWT_AUDIENCE: quicktask
   secret:
     # DEMO: valores de ejemplo, NO usar en producción.
     MONGO_URI: "mongodb://mongodb.quicktask.svc.cluster.local:27017"
-    JWT_SECRET: "demo-not-a-real-secret-change-me"
+
+# Clave pública de validación de JWT. El Secret `quicktask-jwt-public` NO está en
+# Git: lo crea `kind-gitops-utility-belt/scripts/04-generate-jwt-keys.sh`.
+extraVolumes:
+  - name: jwt-public
+    secret:
+      secretName: quicktask-jwt-public
+      defaultMode: 0444
+extraVolumeMounts:
+  - name: jwt-public
+    mountPath: /keys
+    readOnly: true
 
 # Probes contra los endpoints reales de quicktask (Fase 1).
 probes:

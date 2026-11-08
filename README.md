@@ -13,7 +13,8 @@ _cómo_ (los templates de Kubernetes) vive en el chart genérico.
 
 | Repo | Rol |
 |---|---|
-| [`quicktask`](https://github.com/slashispy/quicktask) | Aplicación: API Go + MongoDB, JWT, `/health` y `/ready`. |
+| [`quicktask`](https://github.com/slashispy/quicktask) | Aplicación: API Go + MongoDB, valida JWT, `/health` y `/ready`. |
+| [`quicktask-auth`](https://github.com/slashispy/quicktask-auth) | Emisor de JWT (Quarkus, client credentials, RS256). |
 | [`helm-chart-generic-app`](https://github.com/slashispy/helm-chart-generic-app) | Helm chart genérico y reutilizable (**cómo** se despliega). |
 | **`gitops-app-values`** (este repo) | Values por aplicación (**qué** se despliega). |
 | [`gitops-argocd-apps`](https://github.com/slashispy/gitops-argocd-apps) | App of Apps + ApplicationSet de Argo CD (**quién** reconcilia). |
@@ -26,9 +27,12 @@ _cómo_ (los templates de Kubernetes) vive en el chart genérico.
 ```
 gitops-app-values/
 └── apps/
-    └── quicktask/
-        ├── metadata.yaml   # descriptor: name, namespace, chart (repoURL/path/targetRevision)
-        └── values.yaml     # values que consumen el contrato del chart genérico
+    ├── quicktask/          # API Go + MongoDB (valida JWT)
+    │   ├── metadata.yaml   # descriptor: name, namespace, chart (repoURL/path/targetRevision)
+    │   └── values.yaml     # values que consumen el contrato del chart genérico
+    └── quicktask-auth/     # emisor de JWT (Quarkus), mismo contrato de archivos
+        ├── metadata.yaml
+        └── values.yaml
 ```
 
 Cada carpeta bajo `apps/<nombre>/` es una aplicación gestionada. El
@@ -56,13 +60,25 @@ enabled: true                   # el ApplicationSet puede filtrar por esta clave
 Parametriza el chart genérico para la app. Las claves disponibles y su significado
 están documentadas en el
 [`values.yaml` del chart](https://github.com/slashispy/helm-chart-generic-app/blob/main/values.yaml).
-Para `quicktask` se configuran: imagen `quicktask:dev`, env (`MONGO_DB_NAME`, `PORT`
-en ConfigMap; `MONGO_URI`, `JWT_SECRET` en Secret), probes a `/health` y `/ready`, y
-la dependencia MongoDB (`mongodb.enabled: true`).
+Para `quicktask` se configuran: imagen `quicktask:dev`, env (`MONGO_DB_NAME`, `PORT`,
+`JWT_PUBLIC_KEY_PATH`, `JWT_ISSUER`, `JWT_AUDIENCE` en ConfigMap; `MONGO_URI` en Secret),
+la clave pública montada en `/keys` (`extraVolumes`/`extraVolumeMounts`), probes a
+`/health` y `/ready`, y la dependencia MongoDB (`mongodb.enabled: true`).
 
-> **Secretos**: en este portfolio los valores sensibles van como ejemplo en claro
-> (solo para KIND). En producción se integraría External Secrets / SOPS / Sealed
-> Secrets y este repo **no** contendría secretos reales.
+Para `quicktask-auth` (emisor de JWT, Quarkus): imagen `quicktask-auth:dev`, env
+`QUICKTASK_AUTH_*` en ConfigMap, la clave privada montada en `/keys`, el hash del
+client secret leído de un Secret (`extraEnv` con `secretKeyRef`), probes a
+`/q/health/live` y `/q/health/ready`, y **sin** MongoDB (`mongodb.enabled: false`):
+es un servicio sin estado. Si en el futuro necesitara persistencia, usaría el MongoDB
+del cluster.
+
+> **Secretos**: las claves JWT y las credenciales del cliente de demo **no están en
+> este repo**. Los values solo las referencian por nombre (`quicktask-auth-keys`,
+> `quicktask-jwt-public`, `quicktask-auth-demo-client`); los crea
+> `scripts/04-generate-jwt-keys.sh` (`make keys`) de `kind-gitops-utility-belt` como
+> Secrets del cluster. Lo que sí queda en claro es `MONGO_URI`, un valor de ejemplo
+> sin credenciales (solo para KIND). En producción se integraría External Secrets /
+> SOPS / Sealed Secrets.
 
 ## Cómo agregar una nueva app o entorno
 

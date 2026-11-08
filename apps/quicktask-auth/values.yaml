@@ -1,0 +1,84 @@
+# =============================================================================
+# values.yaml — `quicktask-auth` (Quarkus): emisor de JWT RS256 por client
+# credentials. Consume el chart genérico (helm-chart-generic-app).
+# -----------------------------------------------------------------------------
+# Secrets que NO están en Git (los crea scripts/04-generate-jwt-keys.sh del
+# utility-belt):
+#   - quicktask-auth-keys          -> private.pem (clave privada de firma)
+#   - quicktask-auth-demo-client   -> secret-hash (bcrypt del client secret demo)
+# =============================================================================
+
+nameOverride: quicktask-auth
+
+replicaCount: 1
+
+image:
+  repository: quicktask-auth
+  tag: "dev"            # imagen cargada en KIND con `kind load docker-image quicktask-auth:dev`
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+env:
+  config:
+    QUICKTASK_AUTH_PRIVATE_KEY_PATH: /keys/private.pem
+    QUICKTASK_AUTH_ISSUER: http://quicktask-auth
+    QUICKTASK_AUTH_AUDIENCE: quicktask
+    QUICKTASK_AUTH_TOKEN_TTL: PT15M
+    QUICKTASK_AUTH_KEY_ID: quicktask-auth-1
+    # Cliente de demo: el valor del claim `user_id` que verá quicktask.
+    QUICKTASK_AUTH_CLIENTS__DEMO__USER_ID: demo-service
+
+# El hash bcrypt del client secret viene de un Secret externo al repo.
+extraEnv:
+  - name: QUICKTASK_AUTH_CLIENTS__DEMO__SECRET_HASH
+    valueFrom:
+      secretKeyRef:
+        name: quicktask-auth-demo-client
+        key: secret-hash
+
+extraVolumes:
+  - name: signing-key
+    secret:
+      secretName: quicktask-auth-keys
+      defaultMode: 0440
+extraVolumeMounts:
+  - name: signing-key
+    mountPath: /keys
+    readOnly: true
+
+# La imagen corre como usuario 185; fsGroup permite leer la clave (modo 0440).
+podSecurityContext:
+  fsGroup: 185
+
+probes:
+  liveness:
+    enabled: true
+    httpGet:
+      path: /q/health/live
+      port: 8080
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  readiness:
+    enabled: true
+    httpGet:
+      path: /q/health/ready
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: 500m
+    memory: 384Mi
+
+# Servicio sin estado: no necesita base de datos. Si en el futuro necesitara
+# persistencia, usaría el MongoDB del cluster (mongodb.quicktask.svc.cluster.local).
+mongodb:
+  enabled: false
