@@ -13,8 +13,8 @@ nameOverride: quicktask
 replicaCount: 1
 
 image:
-  repository: quicktask
-  tag: "dev"            # imagen cargada en KIND con `kind load docker-image quicktask:dev`
+  repository: localhost:5001/quicktask
+  tag: "dev"            # arranque en frío: publicada en el registry local; el CI la cambia por el SHA
   pullPolicy: IfNotPresent
 
 service:

@@ -13,8 +13,8 @@ nameOverride: quicktask-auth
 replicaCount: 1
 
 image:
-  repository: quicktask-auth
-  tag: "dev"            # imagen cargada en KIND con `kind load docker-image quicktask-auth:dev`
+  repository: localhost:5001/quicktask-auth
+  tag: "dev"            # arranque en frío: publicada en el registry local; el CI la cambia por el SHA
   pullPolicy: IfNotPresent
 
 service:
